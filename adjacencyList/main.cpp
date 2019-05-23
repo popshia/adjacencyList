@@ -236,7 +236,6 @@ int main() {
             input.close();
             output.close();
             Count = 0;
-            FileNumber = "0";
         } // mission 1
         
         else if ( Command == 2 ) {
