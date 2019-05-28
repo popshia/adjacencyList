@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <time.h>
 #include <math.h>
+#include <set>
 
 using namespace std;
 
@@ -118,16 +119,16 @@ public:
         output.open( outputFileName.c_str(), fstream::out );
         for ( int i = 0 ; i < dataBase.size() ; i++ ) {
             output << "presuccessor" << i+1 << ":  " << dataBase[i].putID << "\tsuccessor:  " ;
-            cout << dataBase[i].putID << "\t" ;
+            cout << "presuccessor: " << dataBase[i].putID << " -> " ;
             for ( int j = 0 ; j < dataBase[i].successor.size() ; j++ ) {
                 output << dataBase[i].successor[j].getID << "\t" ;
-                cout<< dataBase[i].successor[j].weight << "\t";
+                cout << "successor" << j+1 << ": " << dataBase[i].successor[j].getID << ", " << dataBase[i].successor[j].weight << "\t" ;
             } // print out succesor
-            cout<< endl;
+            cout<< endl << endl ;
             output << endl ;
         } // print out dataBase
     } // PrintAdjacencyList()
-};
+}; // class function1
 
 class function2 : public function1 {
 public:
@@ -174,21 +175,70 @@ public:
             cout<< dataBase[i].influence << endl;
         } // print out dataBase
     } // PrintInfluenceList
-};
+}; // class function2
 
+class function3 : public function2 {
+public:
+    float threshold = 0 ;
+    
+    void CalculateInfluenceByWeight( vector<DataStruct> dataBase ) {
+        vector<Successor> queue ;
+        
+        for( int i = 0 ; i < dataBase.size() ; i++ ) {
+            dataBase[i].visited = true;
+            
+            for( int j = 0 ; j < dataBase[i].successor.size() ; j++ ) queue.push_back( dataBase[i].successor[j] ); // push back the successor of presuccessor in queue
+            
+            while( !queue.empty() ) {
+                if ( queue[queue.size()-1].weight >= threshold ) {
+                    for( int k = 0 ; k < dataBase.size() ; k++ ) {
+                        // cout << dataBase[k].putID << "  " << queue[queue.size()-1].getID << endl;
+                        if( strcmp(dataBase[k].putID ,queue[queue.size()-1].getID) == 0 && dataBase[k].visited == false ) {
+                            dataBase[k].visited = true;
+                            dataBase[i].influence++;
+                        for( int n = 0 ; n < dataBase[k].successor.size() ; n++ ) queue.push_back( dataBase[k].successor[n] );
+                        } // count influence and push back queue
+                    } // find successor of the successor
+                }
+                queue.pop_back();
+                // queue.erase( queue.end() );
+            } // DFS methods
+            
+            for( int m = 0 ; m < dataBase.size() ; m++ ) dataBase[m].visited = false;
+        } // all presuccessor management
+        
+        sort( dataBase.begin(), dataBase.end(), CompareInfluence );
+        PrintInfluenceListByWeight( dataBase );
+    } // Calculate
+    
+    void PrintInfluenceListByWeight( vector<DataStruct> dataBase ) {
+        string outputFileName = "pairs" + FileNumber + ".inf";
+        output.open( outputFileName.c_str(), fstream::out );
+        for ( int i = 0 ; i < dataBase.size() ; i++ ) {
+            output << "presuccessor" << i+1 << ":  " << dataBase[i].putID << "\tsuccessor:  " ;
+            for ( int j = 0 ; j < dataBase[i].successor.size() ; j++ ) {
+                output << dataBase[i].successor[j].getID << "\t" ;
+            } // print out succesor
+            output << endl;
+            cout<< dataBase[i].influence << endl;
+        } // print out dataBase
+    } // PrintInfluenceList
+}; // class function3
 
 int main() {
     bool continueOrNot = false;
     function1 One;
     function2 Two;
+    function3 Three;
     
     do {
-        cout << "**********************************************" << endl; // welcome message
-        cout << "*****               DS2ex03              *****" << endl;
-        cout << "***** 0 : Quit                           *****" << endl;
-        cout << "***** 1 : Create Adjacency Lists         *****" << endl;
-        cout << "***** 2 : Calculate Influence            *****" << endl;
-        cout << "**********************************************" << endl;
+        cout << "***********************************************" << endl; // welcome message
+        cout << "*****               DS2ex03               *****" << endl;
+        cout << "***** 0 : Quit                            *****" << endl;
+        cout << "***** 1 : Create Adjacency Lists          *****" << endl;
+        cout << "***** 2 : Calculate Influence             *****" << endl;
+        cout << "***** 3 : Calculate Influence with weight *****" << endl;
+        cout << "***********************************************" << endl;
         cout << endl << "Please enter your choice:" << endl;
         
         cin >> Command; // read in user command
@@ -199,7 +249,7 @@ int main() {
             return 0;
         } // quit
         
-        else if ( Command > 2 || Command < 0 ) {
+        else if ( Command > 3 || Command < 0 ) {
             cout << "Error command! please enter an acceptable command:" << endl << endl;
             continueOrNot = true;
         } // wrong command
@@ -228,7 +278,7 @@ int main() {
                     } // binary file open successfully
                     
                     else {
-                        cout << endl << "*****        file does not exist !       *****" << endl << endl;
+                        cout << endl << "*****         file does not exist !       *****" << endl << endl;
                         function1Confirm = false;
                     } // no such file
                 } // continue
@@ -248,7 +298,7 @@ int main() {
                 } // open successfully
                 
                 else {
-                    cout << "***** Please proceed function 1 first !  *****" << endl;
+                    cout << "*****  Please proceed function 1 first !  *****" << endl;
                     function2Confirm = true;
                     continueOrNot = true;
                 } // function1 first!
@@ -257,6 +307,32 @@ int main() {
             Count = 0;
             FileNumber = "0";
         } // mission 2
+        
+        else if ( Command == 3 ) {
+            bool function3Confirm = false;
+            float threshold = 0;
+            do {
+                cout << "Please enter a threshold:" << endl;
+                cin >> threshold;
+                //cout << threshold << endl;
+                Three.threshold = threshold;
+                
+                if ( !One.dataBase.empty() ) {
+                    Three.CalculateInfluenceByWeight( One.dataBase );
+                    function3Confirm = true;
+                    continueOrNot = true;
+                } // open successfully
+                
+                else {
+                    cout << "*****  Please proceed function 1 first !  *****" << endl;
+                    function3Confirm = true;
+                    continueOrNot = true;
+                } // function1 first!
+            } while ( !function3Confirm );
+            
+            Count = 0;
+            FileNumber = "0";
+        } // mission 3
         
         cout << endl;
     } while ( continueOrNot );
